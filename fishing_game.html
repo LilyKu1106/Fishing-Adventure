@@ -67,6 +67,7 @@
       <div class="stat">💰 <b id="goldVal">0</b></div>
       <div class="stat">Lv.<b id="lvVal">1</b></div>
       <div class="stat" id="locStat">📍 <b id="locVal">湖泊</b></div>
+      <div class="stat" id="musicBtn" style="cursor:pointer;">🔇 音樂</div>
     </div>
 
     <!-- Start screen -->
@@ -678,6 +679,90 @@ function openLog(){
   });
   logPanel.classList.remove('hidden');
 }
+
+// ---------- MUSIC (Web Audio API, default OFF) ----------
+let musicOn = false;
+let audioCtx = null;
+let musicNodes = null;
+
+function initAudioCtx(){
+  if (!audioCtx){
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function startMusic(){
+  initAudioCtx();
+  const masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0.06;
+  masterGain.connect(audioCtx.destination);
+
+  // gentle ambient pad using two detuned oscillators + slow LFO on filter
+  const osc1 = audioCtx.createOscillator();
+  const osc2 = audioCtx.createOscillator();
+  osc1.type = 'sine'; osc2.type = 'sine';
+  osc1.frequency.value = 196; // G3
+  osc2.frequency.value = 246.94; // B3
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 800;
+
+  const lfo = audioCtx.createOscillator();
+  lfo.frequency.value = 0.05;
+  const lfoGain = audioCtx.createGain();
+  lfoGain.gain.value = 300;
+  lfo.connect(lfoGain);
+  lfoGain.connect(filter.frequency);
+
+  osc1.connect(filter);
+  osc2.connect(filter);
+  filter.connect(masterGain);
+
+  osc1.start(); osc2.start(); lfo.start();
+
+  // gentle melodic bell notes at random intervals
+  const notes = [392, 440, 493.88, 587.33, 659.25];
+  let bellTimer = null;
+  function playBell(){
+    if (!musicOn) return;
+    const freq = notes[Math.floor(Math.random()*notes.length)];
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = 'triangle';
+    o.frequency.value = freq;
+    g.gain.value = 0;
+    o.connect(g); g.connect(masterGain);
+    const now = audioCtx.currentTime;
+    g.gain.linearRampToValueAtTime(0.5, now+0.05);
+    g.gain.exponentialRampToValueAtTime(0.001, now+2.2);
+    o.start(now); o.stop(now+2.3);
+    bellTimer = setTimeout(playBell, 2500 + Math.random()*3500);
+  }
+  bellTimer = setTimeout(playBell, 1500);
+
+  musicNodes = {masterGain, osc1, osc2, lfo, stop(){
+    clearTimeout(bellTimer);
+    try { osc1.stop(); osc2.stop(); lfo.stop(); } catch(e){}
+    masterGain.disconnect();
+  }};
+}
+
+function stopMusic(){
+  if (musicNodes){ musicNodes.stop(); musicNodes = null; }
+}
+
+document.getElementById('musicBtn').addEventListener('click', ()=>{
+  musicOn = !musicOn;
+  const btn = document.getElementById('musicBtn');
+  if (musicOn){
+    startMusic();
+    btn.innerHTML = '🔊 音樂';
+  } else {
+    stopMusic();
+    btn.innerHTML = '🔇 音樂';
+  }
+});
 
 // ---------- START ----------
 document.getElementById('startBtn').addEventListener('click', ()=>{

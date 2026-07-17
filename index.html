@@ -446,6 +446,7 @@ function startReel(){
   actionBtn.textContent = '拉竿中...';
   actionBtn.disabled = true;
   reelUI.classList.remove('hidden');
+  document.getElementById('bottomAction').classList.add('hidden');
 
   const fish = pickFish();
   const trackWidth = reelTrack.clientWidth;
@@ -522,6 +523,7 @@ function updateReelDOM(){
 function finishReel(success){
   cancelAnimationFrame(reelRAF);
   reelUI.classList.add('hidden');
+  document.getElementById('bottomAction').classList.remove('hidden');
   actionBtn.disabled = false;
   actionBtn.textContent = '拋竿';
   const fish = reelState.fish;

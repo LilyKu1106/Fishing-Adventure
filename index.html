@@ -391,7 +391,7 @@ function startBite(){
   actionBtn.textContent = '‼️ 用力點擊！';
   centerMsg('❗❗❗ 魚上鉤了！快點擊！');
   const rod = currentRod();
-  const window_ms = 3000 + rod.biteBonus*15;
+  const window_ms = 1000 + rod.biteBonus*15;
   biteTimeout = setTimeout(()=>{
     if (phase !== 'bite') return;
     missBite();
@@ -554,11 +554,13 @@ actionBtn.addEventListener('click', onActionClick);
 
 function onActionDown(){
   if (phase === 'idle') startCast();
+  else if (phase === 'bite') hookFish();
 }
 function onActionUp(){
   if (phase === 'casting') releaseCast();
 }
 function onActionClick(){
+  // kept for pointer devices where mousedown/touchstart may be swallowed elsewhere
   if (phase === 'bite') hookFish();
 }
 
